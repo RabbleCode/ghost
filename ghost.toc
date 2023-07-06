@@ -1,0 +1,11 @@
+## Interface: 11403
+## Interface-Classic: 11403
+## Title: ghost
+## Version: 1.0
+## Author: Rabble
+## SavedVariables GhostCharacterProgress
+
+ghoststart.lua
+ghostdata.lua
+ghost.lua
+ghost.xml

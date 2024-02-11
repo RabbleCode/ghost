@@ -1,5 +1,5 @@
-## Interface: 11403
-## Interface-Classic: 11403
+## Interface: 11500
+## Interface-Classic: 11500
 ## Title: ghost
 ## Version: 1.0
 ## Author: Rabble

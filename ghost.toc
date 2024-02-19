@@ -1,9 +1,9 @@
 ## Interface: 11500
 ## Interface-Classic: 11500
 ## Title: ghost
-## Version: 1.0
+## Version: 1.2
 ## Author: Rabble
-## SavedVariables GhostCharacterProgress
+## SavedVariables: GhostCharacterProgress
 
 ghoststart.lua
 ghostdata.lua

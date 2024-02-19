@@ -20,6 +20,7 @@ function ghost:OnEvent(self, event, ...)
 	elseif event == "PLAYER_LOGIN" then
 		ghostFrame:UnregisterEvent("PLAYER_LOGIN");
 		ghost:LoadData();
+		ghost:LoadCharacterData();
 		ghost:PrimeItemCache();
 		ghost:Announce();		
 	elseif event == "PLAYER_ENTERING_WORLD" then
@@ -27,19 +28,40 @@ function ghost:OnEvent(self, event, ...)
 	end
 end
 
+---------
+function ghost:LoadCharacterData()
+---------
+	ghost.CurrentRealm = GetRealmName();
+	ghost.PlayerName = UnitName("player");
+	ghost.PlayerNameWithRealm = ghost.CurrentRealm.." - "..ghost.PlayerName
+
+	if(GhostCharacterProgress == nil) then 
+		GhostCharacterProgress = {} 
+	end
+	
+	if(GhostCharacterProgress[ghost.CurrentRealm] == nil) then
+		GhostCharacterProgress[ghost.CurrentRealm] = {}
+	end
+
+	if(GhostCharacterProgress[ghost.CurrentRealm][ghost.PlayerName] == nil) then
+		GhostCharacterProgress[ghost.CurrentRealm][ghost.PlayerName] = {}
+	end
+
+	ghost.PlayerProgress = GhostCharacterProgress[ghost.CurrentRealm][ghost.PlayerName]
+	ghost:UpdatePlayerProgress();
+end
+
 -- Calls GetItemInfo on all related quest items to prime the local cache
 ---------
 function ghost:PrimeItemCache()
 ---------
-	-- Get main quest items
-	for index, itemID in pairs(ghost.MainQuest["items"]) do	
-		local _, link = GetItemInfo(itemID)
-	end
+	-- Get each chapter
+	for index, chapter in pairs(ghost.Chapters) do			
+		GetItemInfo(chapter["itemid"])	
 
-	-- Get chapter quest items
-	for index, quest in pairs(ghost.ChapterQuests) do		
-		for index, itemID in pairs(quest["items"]) do	
-			local _, link = GetItemInfo(itemID)		
+		-- Get pages for each chapter
+		for index, itemID in pairs(chapter["pages"]) do	
+			GetItemInfo(itemID)		
 		end	
 	end	
 end
@@ -47,5 +69,5 @@ end
 ---------
 function ghost:Announce()
 ---------
-	DEFAULT_CHAT_FRAME:AddMessage(YELLOW_FONT_COLOR_CODE.."GHOST |ractivated. ");
+	ghost:PrintMessageWithGhostPrefix("activated");	
 end

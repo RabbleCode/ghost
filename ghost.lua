@@ -167,7 +167,10 @@ function ghost:PrintCharacterProgress(character, realm)
 	local name = character.." - "..realm
 
 	local realmProgress = GhostCharacterProgress[realm]
-	local characterProgress = realmProgress ~= nil and GhostCharacterProgress[realm][character]
+	local characterProgress 
+	if(realmProgress ~= nil) then
+		characterProgress = GhostCharacterProgress[realm][character]
+	end
 	local hasMainQuestProgress = characterProgress ~= nil and characterProgress["MainQuestProgress"] ~= nil
 	local isCompleted = hasMainQuestProgress and characterProgress["MainQuestProgress"]["completed"] ~= nil
 	local isReady = hasMainQuestProgress and characterProgress["MainQuestProgress"]["ready"] ~= nil

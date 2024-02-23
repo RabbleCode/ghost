@@ -65,7 +65,6 @@ function ghost:EraseAllCharacterProgress()
 end
 
 function ghost:SavePlayerProgress()
-	print("Saving progress...")
 	if(GhostCharacterProgress[ghost.CurrentRealm] ~= nil) then
 		-- Delete character progress if it's nil
 		if(ghost.PlayerProgress == nil) then
@@ -128,8 +127,7 @@ function ghost:UpdateChapterProgress()
 		local pages = {}
 
 		-- If incomplete, record progress on individual pages
-		if not isComplete and not isReady then	
-			print("Checking page progress...")	
+		if not isComplete and not isReady then
 			for _, pageID in pairs(chapter["pages"]) do			
 				if GetItemCount(pageID) > 0 then	
 					hasPages = true;

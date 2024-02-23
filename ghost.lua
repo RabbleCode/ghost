@@ -158,7 +158,7 @@ function ghost:UpdateChapterProgress()
 
 			ghost.PlayerProgress["ChapterProgress"] = chaptersProgress
 		elseif chaptersProgress ~= nil and chaptersProgress[questID] ~= nil then
-			ghost.PlayerProgress["ChapterProgress"]["questID"] = nil
+			ghost.PlayerProgress["ChapterProgress"][questID] = nil
 		end
 	end	
 

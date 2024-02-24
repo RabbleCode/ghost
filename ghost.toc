@@ -1,7 +1,7 @@
 ## Interface: 11500
 ## Interface-Classic: 11500
 ## Title: ghost
-## Version: 1.2
+## Version: 1.2.4
 ## Author: Rabble
 ## SavedVariables: GhostCharacterProgress
 

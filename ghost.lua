@@ -1,16 +1,14 @@
----------
+
 function ghost:HandleSlashCommand(cmd)
----------
+
 	if cmd ~= nil and cmd ~= "" then
 		if(cmd == "delete all") then			
 			ghost:EraseAllCharacterProgress();
 		elseif(cmd == "delete") then
 			ghost:ErasePlayerProgress();
 		else
-			local cmd1, cmd2 = cmd:match("^(%S*)%s*(.-)$")
-			local character = ghost:ConvertToTitleCase(cmd1)
-			if(cmd1 ~= nil and cmd2 ~= nil and cmd2 ~= "") then
-				local realm = ghost:ConvertToTitleCase(cmd2)
+			local character, realm = ghost:GetCharacterAndRealm(cmd)
+			if(realm ~= nil) then
 				ghost:CheckSpecificCharacter(character, realm);
 			else
 				ghost:CheckSpecificCharacter(character, ghost.CurrentRealm);
@@ -22,21 +20,33 @@ function ghost:HandleSlashCommand(cmd)
 	end
 end
 
----------
+function ghost:GetCharacterAndRealm(arguments)
+	local character, realm = arguments:match("^(%S*)%s*(.-)$")
+	character = ghost:ConvertToTitleCase(character)
+	if(realm ~= nil and realm ~= '') then
+		realm = ghost:ConvertToTitleCase(realm)	
+	else
+		realm = nil
+	end
+	return character, realm
+end
+
 function ghost:ConvertToTitleCase(text)
----------
-	return string.gsub(text, "(%a)([%w_']*)", TitleCase)
+	return string.gsub(text, "(%a)([%w_']*)", function(first, rest) return first:upper()..rest:lower() end)
 end
 
----------
-function TitleCase( first, rest )
----------
-	return first:upper()..rest:lower()
+function ghost:GetClassColor(class)
+	class = string.upper(class)
+	local colorStr = RAID_CLASS_COLORS[class]["colorStr"] or YELLOW_FONT_COLOR_CODE
+	return "|c"..colorStr
 end
 
----------
+function ghost:GetClassColoredName(class, character, realm)
+	return ghost:GetClassColor(class)..character.."|r"..YELLOW_FONT_COLOR_CODE.." - "..realm
+end
+
 function ghost:CheckSpecificCharacter(character, realm)
----------
+
 	local name = character.." - "..realm
 	local progress = nil
 	if(GhostCharacterProgress[realm] ~= nil and GhostCharacterProgress[realm][character] ~= nil) then
@@ -49,17 +59,15 @@ function ghost:CheckSpecificCharacter(character, realm)
 	end
 end
 
----------
 function ghost:ErasePlayerProgress()
----------
+
 	ghost:PrintMessageWithGhostPrefix(RED_FONT_COLOR_CODE.."Erasing |rdata for "..YELLOW_FONT_COLOR_CODE..ghost.PlayerNameWithRealm)
 	ghost.PlayerProgress = nil
 	ghost:SavePlayerProgress()
 end
 
----------
 function ghost:EraseAllCharacterProgress()
----------
+
 	ghost:PrintMessageWithGhostPrefix(RED_FONT_COLOR_CODE.."Erasing data for all characters.")		
 	GhostCharacterProgress = nil
 end
@@ -68,9 +76,6 @@ function ghost:SavePlayerProgress()
 	if(GhostCharacterProgress[ghost.CurrentRealm] ~= nil) then
 		-- Delete character progress if it's nil
 		if(ghost.PlayerProgress == nil) then
-			GhostCharacterProgress[ghost.CurrentRealm][ghost.PlayerName] = nil
-		-- Delete character progress if there is no main quest or chapter progress
-		elseif (ghost.PlayerProgress["MainQuestProgress"] == nil and ghost.PlayerProgress["ChapterProgress"] == nil) then
 			GhostCharacterProgress[ghost.CurrentRealm][ghost.PlayerName] = nil
 		-- Save character progress
 		else
@@ -90,215 +95,202 @@ function ghost:SavePlayerProgress()
 	end
 end
 
----------
 function ghost:UpdatePlayerProgress()
----------
-	local questID = ghost.MainQuest["questid"]
 
-	-- Quest is already completed and turned in
-	if C_QuestLog.IsQuestFlaggedCompleted(questID) then
-		ghost.PlayerProgress["MainQuestProgress"] = {
-			["completed"] = true
-		}
-	-- Quest is complete and ready to be turned in
-	elseif IsQuestComplete(questID) then
-		ghost.PlayerProgress["MainQuestProgress"] = {
-			["ready"] = true
-		}	
-	-- Quest is not yet complete
-	else
-		-- Check each individual chapter
-		ghost:UpdateChapterProgress()			
-	end
 
-	ghost:SavePlayerProgress();
-end
+	if(ghost.MainQuest ~= nil and ghost.MainQuest.Chapters ~= nil) then
+		ghost:LoadPlayerData()
+		ghost.PlayerProgress.Faction = ghost.PlayerFaction
+		ghost.PlayerProgress.Level = ghost.PlayerLevel
+		ghost.PlayerProgress.Class = ghost.PlayerClass
 
----------
-function ghost:UpdateChapterProgress()
----------			
-	for _, chapter in pairs(ghost.Chapters) do
+		local questID = ghost.MainQuest.QuestID
 
-		local questID = chapter["questid"]
-		local isComplete = C_QuestLog.IsQuestFlaggedCompleted(questID) 
-		local isReady = IsQuestComplete(questID)
-		local chaptersProgress = ghost.PlayerProgress["ChapterProgress"]
-		local hasPages = false
-		local pages = {}
-
-		-- If incomplete, record progress on individual pages
-		if not isComplete and not isReady then
-			for _, pageID in pairs(chapter["pages"]) do			
-				if GetItemCount(pageID) > 0 then	
-					hasPages = true;
-					pages[pageID] = pageID;
-				end
-			end
+		-- Quest is already completed and turned in
+		if C_QuestLog.IsQuestFlaggedCompleted(questID) then
+			ghost.PlayerProgress.Completed = true
+		-- Quest is complete and ready to be turned in
+		elseif IsQuestComplete(questID) then
+			ghost.PlayerProgress.Ready = true
+		-- Quest is not yet complete, check each individual chapter
+		else
+			ghost:UpdateChapterProgress()
 		end
 		
-		-- Only cache data if there's something to cache
-		if(isComplete or isReady or hasPages) then
-			if(chaptersProgress == nil) then
-				chaptersProgress = {}
-			end
-
-			chaptersProgress[questID] = {
-				["itemid"] = chapter["itemid"],
-			}
-
-			local chapterProgress = chaptersProgress[questID]
-
-			if(isComplete) then
-				chapterProgress["completed"] = true
-			elseif(isReady) then
-				chapterProgress["ready"] = true
-			elseif(hasPages) then
-				chapterProgress["PageProgress"] = pages
-			end
-
-			ghost.PlayerProgress["ChapterProgress"] = chaptersProgress
-		elseif chaptersProgress ~= nil and chaptersProgress[questID] ~= nil then
-			ghost.PlayerProgress["ChapterProgress"][questID] = nil
-		end
-	end	
-
-
+		ghost:SavePlayerProgress();
+	else
+		ghost:PrintMessageWithShredderPrefix(RED_FONT_COLOR_CODE.."Quest information corrupted. Please reinstall the addon.")
+	end
 end
 
----------
+function ghost:UpdateChapterProgress()
+	
+	if(ghost.MainQuest ~= nil and ghost.MainQuest.Chapters ~= nil) then			
+		local chapters = 0
+		for _, chapter in pairs(ghost.MainQuest.Chapters) do
+			
+			local chapterProgress = {}
+			local questID = chapter.QuestID
+			local isComplete = C_QuestLog.IsQuestFlaggedCompleted(questID) 
+			local isReady = IsQuestComplete(questID)
+			local hasChapter = GetItemCount(chapter.ItemID) > 0
+			local hasPages = false
+			local pages = {}
+
+			-- If incomplete, record progress on individual pages
+			if not isComplete and not isReady then
+				hasPages, pages = ghost:FindCollectedPages(chapter)
+			end
+			
+			-- Only cache data if there's something to cache
+			if(isComplete) then
+				chapters = chapters + 1;
+				chapterProgress.Completed = true
+			elseif(isReady) then
+				chapters = chapters + 1;
+				chapterProgress.Ready = true
+			elseif(hasPages) then
+				chapters = chapters + 1;
+				chapterProgress.Pages = pages
+			else
+				chapterProgress = nil
+			end
+
+			-- If progress on this chapter
+			if(chapterProgress ~= nil) then
+				-- Make sure the base Chapters node isn't empty
+				if(ghost.PlayerProgress.Chapters == nil) then
+					ghost.PlayerProgress.Chapters = {}
+				end
+				-- And update the node for this chapter
+				ghost.PlayerProgress.Chapters[chapter.QuestID] = chapterProgress
+			-- If no progress on this chapter, remove the node for this chapter if it exists
+			elseif(ghost.PlayerProgress.Chapters ~= nil) then
+				ghost.PlayerProgress.Chapters[chapter.QuestID] = nil	
+			end
+
+			-- If no progress on any chapters, remove the entire Chapters node
+			if(chapters == 0) then
+				shredder.PlayerProgress.Chapters = nil
+			end
+		end	
+	else
+		ghost:PrintMessageWithShredderPrefix(RED_FONT_COLOR_CODE.."Quest information corrupted. Please reinstall the addon.")
+	end
+end
+
+function ghost:FindCollectedPages(chapter)
+	local hasPages = false
+	local pages = {}
+
+	for _, pageID in pairs(chapter.Pages) do			
+		if GetItemCount(pageID) > 0 then
+			hasPages = true;
+			pages[pageID] = true
+		end
+	end
+
+	return hasPages, pages
+end
+
 function ghost:PrintCharacterProgress(character, realm)
----------
-	local name = character.." - "..realm
+
 
 	local realmProgress = GhostCharacterProgress[realm]
 	local characterProgress 
 	if(realmProgress ~= nil) then
 		characterProgress = GhostCharacterProgress[realm][character]
 	end
-	local hasMainQuestProgress = characterProgress ~= nil and characterProgress["MainQuestProgress"] ~= nil
-	local isCompleted = hasMainQuestProgress and characterProgress["MainQuestProgress"]["completed"] ~= nil
-	local isReady = hasMainQuestProgress and characterProgress["MainQuestProgress"]["ready"] ~= nil
+
+	-- Progress flags
+	local hasProgress = characterProgress ~= nil
+	local isCompleted = hasProgress and characterProgress.Completed == true
+	local isReady = hasProgress and characterProgress.Ready == true
+	
+	-- Character info
+	local faction = characterProgress.Faction or "UNKNOWN"
+	local level = characterProgress.Level or 0
+	local class = characterProgress.Class or "UNKNOWN"
+	local classColoredName = ghost:GetClassColoredName(class, character, realm)
 
 	if(isCompleted) then
-		ghost:PrintMainQuestProgress(name, true, false)
+		ghost:PrintMessageWithGhostPrefix("Quest chain "..GREEN_FONT_COLOR_CODE.."already completed|r for "..YELLOW_FONT_COLOR_CODE..classColoredName);
 	elseif(isReady) then
-		ghost:PrintMainQuestProgress(name, false, true)
+		ghost:PrintMessageWithGhostPrefix("Quest chain "..ORANGE_FONT_COLOR_CODE.."ready for turn in|r for "..YELLOW_FONT_COLOR_CODE..classColoredName);
 	else
-		ghost:PrintMainQuestProgress(name, false, false)
+		ghost:PrintMessageWithGhostPrefix("Quest chain "..RED_FONT_COLOR_CODE.."incomplete|r for "..YELLOW_FONT_COLOR_CODE..classColoredName);
 		ghost:PrintChaptersProgress(characterProgress)
 	end
 end
 
----------
 function ghost:PrintChaptersProgress(progress)
----------
-	for _, chapter in pairs(ghost.Chapters) do
 
-		local _, link = GetItemInfo(chapter["itemid"])		
-		local questID = chapter["questid"]
-		local hasProgress = progress ~= nil and progress["ChapterProgress"] ~= nil and progress["ChapterProgress"][questID] ~= nil
+	for _, chapter in pairs(ghost.MainQuest.Chapters) do
+
+		local questID = chapter.QuestID
+		local name = chapter.Name
+		local hasProgress = progress ~= nil and progress.Chapters ~= nil and progress.Chapters[questID] ~= nil
 
 		-- if character has recorded progress
 		if(hasProgress) then
-			local chapterProgress = progress["ChapterProgress"][questID]
+			local chapterProgress = progress.Chapters[questID]
 			-- if chapter is already completed
-			if(chapterProgress["completed"] == true) then
-				ghost:PrintChapterProgress(chapter["name"], true, false)
+			if(chapterProgress.Completed == true) then
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name..": "..GREEN_FONT_COLOR_CODE.."completed!")
 			-- else if chapter is ready for turn in
-			elseif(chapterProgress["ready"] == true) then
-				ghost:PrintChapterProgress(chapter["name"], false, true)
+			elseif(chapterProgress.Ready == true) then
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name..": "..ORANGE_FONT_COLOR_CODE.."ready for turn in.") 
 			-- else if chapter is incomplete
 			else
-				ghost:PrintChapterProgress(chapter["name"], false, false)
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name)
 				ghost:PrintPagesProgress(chapter, chapterProgress)
 			end
 		else
 			-- no recorded progress
-			ghost:PrintChapterProgress(chapter["name"], false, false)
+		ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name)
 			ghost:PrintPagesProgress(chapter, nil)
 		end
 	end
 end
 
----------
 function ghost:PrintPagesProgress(chapter, chapterProgress)
----------
-	for _, pageID in pairs(chapter["pages"]) do
+
+	for _, pageID in pairs(chapter.Pages) do
 		local _, link = GetItemInfo(pageID)
-		if(chapterProgress ~= nil and chapterProgress["PageProgress"] ~= nil and chapterProgress["PageProgress"][pageID] ~= nil) then
-			ghost:PrintPageProgress(link, true)
+		if(chapterProgress ~= nil and chapterProgress.Pages ~= nil and chapterProgress.Pages[pageID] ~= nil) then
+			ghost:PrintMessage("    "..link..": "..GREEN_FONT_COLOR_CODE.."collected")
 		else
-			ghost:PrintPageProgress(link, false)
+			ghost:PrintMessage("    "..link..": "..RED_FONT_COLOR_CODE.."missing")
 		end
 	end
 end
 
----------
-function ghost:PrintMainQuestProgress(character, isCompleted, isReady)
----------
-	if(isCompleted) then
-		ghost:PrintMessageWithGhostPrefix("Quest chain "..GREEN_FONT_COLOR_CODE.."already completed|r for "..YELLOW_FONT_COLOR_CODE..character);
-	elseif(isReady) then
-		ghost:PrintMessageWithGhostPrefix("Quest chain "..ORANGE_FONT_COLOR_CODE.."ready for turn in|r for "..YELLOW_FONT_COLOR_CODE..character);
-	else
-		ghost:PrintMessageWithGhostPrefix("Quest chain "..RED_FONT_COLOR_CODE.."incomplete|r for "..YELLOW_FONT_COLOR_CODE..character);
-	end
-end
-
----------
-function ghost:PrintChapterProgress(chapterName, isCompleted, isReady)
----------
-	if(isCompleted) then
-		ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..chapterName..": "..GREEN_FONT_COLOR_CODE.."completed!")
-	elseif(isReady) then
-		ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..chapterName..": "..ORANGE_FONT_COLOR_CODE.."ready for turn in.") 
-	else
-		ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..chapterName)
-	end	
-end
-
----------
-function ghost:PrintPageProgress(pageLink, isCollected)
----------
-	if(isCollected) then
-		ghost:PrintMessage("    "..pageLink..": "..GREEN_FONT_COLOR_CODE.."collected")
-	else		
-		ghost:PrintMessage("    "..pageLink..": "..RED_FONT_COLOR_CODE.."missing")
-	end
-end
-
----------
 function ghost:PrintHeader(characterName)
----------
+
 	ghost:PrintMessageWithGhostPrefix("progress for "..YELLOW_FONT_COLOR_CODE..characterName.."...");
 end
 
----------
 function ghost:PrintMessageWithGhostPrefix(message)
----------
+
 	ghost:PrintMessage(YELLOW_FONT_COLOR_CODE.."GHOST|r | "..message)
 end
 
----------
 function ghost:PrintMessage(message)
----------
+
 	DEFAULT_CHAT_FRAME:AddMessage(message)
 end
 
----------
 function ghost:PrintFooter(completed)
----------
+
 	ghost:PrintSeparatorLine();
 end
 
----------
 function ghost:PrintSeparatorLine()
----------
-	DEFAULT_CHAT_FRAME:AddMessage("---------------------------|r");
+
+	DEFAULT_CHAT_FRAME:AddMessage("|r");
 end
 
----------
 function ghost:PrintDebug(message)
----------	
+	
 	DEFAULT_CHAT_FRAME:AddMessage(YELLOW_FONT_COLOR_CODE.."GHOST|r DEBUG | "..message);
 end

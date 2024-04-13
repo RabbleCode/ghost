@@ -119,7 +119,7 @@ function ghost:UpdatePlayerProgress()
 		
 		ghost:SavePlayerProgress();
 	else
-		ghost:PrintMessageWithShredderPrefix(RED_FONT_COLOR_CODE.."Quest information corrupted. Please reinstall the addon.")
+		ghost:PrintMessageWithGhostPrefix(RED_FONT_COLOR_CODE.."Quest information corrupted. Please reinstall the addon.")
 	end
 end
 
@@ -171,11 +171,11 @@ function ghost:UpdateChapterProgress()
 
 			-- If no progress on any chapters, remove the entire Chapters node
 			if(chapters == 0) then
-				shredder.PlayerProgress.Chapters = nil
+				ghost.PlayerProgress.Chapters = nil
 			end
 		end	
 	else
-		ghost:PrintMessageWithShredderPrefix(RED_FONT_COLOR_CODE.."Quest information corrupted. Please reinstall the addon.")
+		ghost:PrintMessageWithGhostPrefix(RED_FONT_COLOR_CODE.."Quest information corrupted. Please reinstall the addon.")
 	end
 end
 

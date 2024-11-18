@@ -3,7 +3,10 @@ ghost = {};
 function ghost:OnLoad()
 
 	SLASH_GHOST1 = "/ghost";
-	SlashCmdList["GHOST"] = function(msg) ghost:HandleSlashCommand(msg) end
+	SLASH_GHOSTC1 = "/ghostc";
+	SLASH_GHOSTC2 = "/gc";
+	SlashCmdList["GHOST"] = function(msg) ghost:HandleSlashCommand(msg, false) end
+	SlashCmdList["GHOSTC"] = function(msg) ghost:HandleSlashCommand(msg, true) end
 
 	ghostFrame:RegisterEvent("PLAYER_LOGIN")
 	ghostFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

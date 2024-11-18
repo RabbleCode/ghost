@@ -1,6 +1,4 @@
-
-function ghost:HandleSlashCommand(cmd)
-
+function ghost:HandleSlashCommand(cmd, compactMode)
 	if cmd ~= nil and cmd ~= "" then
 		if(cmd == "delete all") then			
 			ghost:EraseAllCharacterProgress();
@@ -9,14 +7,14 @@ function ghost:HandleSlashCommand(cmd)
 		else
 			local character, realm = ghost:GetCharacterAndRealm(cmd)
 			if(realm ~= nil) then
-				ghost:CheckSpecificCharacter(character, realm);
+				ghost:CheckSpecificCharacter(character, realm, compactMode);
 			else
-				ghost:CheckSpecificCharacter(character, ghost.CurrentRealm);
+				ghost:CheckSpecificCharacter(character, ghost.CurrentRealm, compactMode);
 			end			
 		end
 	else
 		ghost:UpdatePlayerProgress();
-		ghost:PrintCharacterProgress(ghost.PlayerName, ghost.CurrentRealm);
+		ghost:PrintCharacterProgress(ghost.PlayerName, ghost.CurrentRealm, compactMode);
 	end
 end
 
@@ -45,7 +43,7 @@ function ghost:GetClassColoredName(class, character, realm)
 	return ghost:GetClassColor(class)..character.."|r"..YELLOW_FONT_COLOR_CODE.." - "..realm
 end
 
-function ghost:CheckSpecificCharacter(character, realm)
+function ghost:CheckSpecificCharacter(character, realm, compactMode)
 
 	local name = character.." - "..realm
 	local progress = nil
@@ -55,7 +53,7 @@ function ghost:CheckSpecificCharacter(character, realm)
 	if progress == nil then	
 		ghost:PrintMessageWithGhostPrefix("Progress for "..YELLOW_FONT_COLOR_CODE..name..RED_FONT_COLOR_CODE.." not found.")
 	else		
-		ghost:PrintCharacterProgress(character, realm)
+		ghost:PrintCharacterProgress(character, realm, compactMode)
 	end
 end
 
@@ -193,8 +191,7 @@ function ghost:FindCollectedPages(chapter)
 	return hasPages, pages
 end
 
-function ghost:PrintCharacterProgress(character, realm)
-
+function ghost:PrintCharacterProgress(character, realm, compactMode)
 
 	local realmProgress = GhostCharacterProgress[realm]
 	local characterProgress 
@@ -219,7 +216,11 @@ function ghost:PrintCharacterProgress(character, realm)
 		ghost:PrintMessageWithGhostPrefix("Quest chain "..ORANGE_FONT_COLOR_CODE.."ready for turn in|r for "..YELLOW_FONT_COLOR_CODE..classColoredName);
 	else
 		ghost:PrintMessageWithGhostPrefix("Quest chain "..RED_FONT_COLOR_CODE.."incomplete|r for "..YELLOW_FONT_COLOR_CODE..classColoredName);
-		ghost:PrintChaptersProgress(characterProgress)
+		if(compactMode) then
+			ghost:PrintCompactChaptersProgress(characterProgress)
+		else
+			ghost:PrintChaptersProgress(characterProgress)
+		end		
 	end
 end
 
@@ -247,7 +248,7 @@ function ghost:PrintChaptersProgress(progress)
 			end
 		else
 			-- no recorded progress
-		ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name)
+			ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name)
 			ghost:PrintPagesProgress(chapter, nil)
 		end
 	end
@@ -263,6 +264,57 @@ function ghost:PrintPagesProgress(chapter, chapterProgress)
 			ghost:PrintMessage("    "..link..": "..RED_FONT_COLOR_CODE.."missing")
 		end
 	end
+end
+
+
+function ghost:PrintCompactChaptersProgress(progress)
+
+	for _, chapter in pairs(ghost.MainQuest.Chapters) do
+
+		local questID = chapter.QuestID
+		local name = chapter.Name
+		local hasProgress = progress ~= nil and progress.Chapters ~= nil and progress.Chapters[questID] ~= nil
+
+		-- if character has recorded progress
+		if(hasProgress) then
+			local chapterProgress = progress.Chapters[questID]
+			-- if chapter is already completed
+			if(chapterProgress.Completed == true) then
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name..": "..GREEN_FONT_COLOR_CODE.."completed!")
+			-- else if chapter is ready for turn in
+			elseif(chapterProgress.Ready == true) then
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name..": "..ORANGE_FONT_COLOR_CODE.."ready for turn in.") 
+			-- else if chapter is incomplete
+			else
+				local pagesProgress = ghost:GetCompactPagesProgress(chapter, chapterProgress)
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name..': '..pagesProgress)
+			end
+		else
+			-- no recorded progress
+				local pagesProgress = ghost:GetCompactPagesProgress(chapter, nil)
+				ghost:PrintMessage("  "..YELLOW_FONT_COLOR_CODE..name..': '..pagesProgress)
+		end
+	end
+end
+
+function ghost:GetCompactPagesProgress(chapter, chapterProgress)
+
+	local progress = ''
+	local count = 0
+	for _, pageID in pairs(chapter.Pages) do
+		count = count + 1
+		local name, link = GetItemInfo(pageID)
+		local pageNumber = string.match(name,'%d[%d]?')
+		if(count > 1) then
+			progress = progress..', '
+		end
+		if(chapterProgress ~= nil and chapterProgress.Pages ~= nil and chapterProgress.Pages[pageID] ~= nil) then
+			progress = progress..GREEN_FONT_COLOR_CODE..pageNumber..'|r'
+		else
+			progress = progress..RED_FONT_COLOR_CODE..pageNumber..'|r'
+		end
+	end
+	return progress
 end
 
 function ghost:PrintHeader(characterName)

@@ -1,7 +1,7 @@
-## Interface: 11504
-## Interface-Classic: 11504
+## Interface: 11506
+## Interface-Classic: 11506
 ## Title: ghost by |cFFFFF468Rabble|r
-## Version: 1.3.2
+## Version: 1.4
 ## Author: Rabble
 ## SavedVariables: GhostCharacterProgress
 

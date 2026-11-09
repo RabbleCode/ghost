@@ -1,6 +1,6 @@
 # ghost
 
-ghost (short for **G**reen **H**ills **o**f **S**trangle**t**horn) is a simple addon for World of Warcraft: Classic that tracks progress on the infamous Green Hills of Stranglethorn quest chain.
+ghost (short for **G**reen **H**ills **o**f **S**trangle**t**horn) is a simple addon for World of Warcraft: Classic and World of Warcraft: Forever that tracks progress on the infamous Green Hills of Stranglethorn quest chain.
 
 Usage:
 

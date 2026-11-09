@@ -1,7 +1,7 @@
 ## Interface: 11509, 16001
 
 ## Title: ghost by |cFFFFF468Rabble|r
-## Version: 1.6
+## Version: 1.6.1
 ## Author: Rabble
 ## SavedVariables: GhostCharacterProgress
 

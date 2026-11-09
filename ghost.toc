@@ -1,10 +1,11 @@
 ## Interface: 11509, 16001
 
 ## Title: ghost by |cFFFFF468Rabble|r
-## Version: 1.6.1
+## Version: 2.0
 ## Author: Rabble
 ## SavedVariables: GhostCharacterProgress
 
+ghostAPIWrappers.lua
 ghoststart.lua
 ghostdata.lua
 ghost.lua

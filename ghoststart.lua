@@ -1,5 +1,3 @@
-ghost = {};
-
 function ghost:OnLoad()
 
 	SLASH_GHOST1 = "/ghost";
@@ -34,8 +32,13 @@ end
 function ghost:LoadPlayerData()
 
 	ghost.CurrentRealm = GetRealmName();
-	ghost.PlayerName = UnitName("player");
-	ghost.PlayerNameWithRealm = ghost.CurrentRealm.." - "..ghost.PlayerName
+	ghost.PlayerName, ghost.PlayerLastName = UnitName("player");
+	ghost.HideRealmName = false
+	if(ghost.PlayerLastName ~= nil) then -- Accounting for Forever's dual names and "realmlessness"
+		ghost.HideRealmName = true
+		ghost.PlayerName = ghost.PlayerName..' '..ghost.PlayerLastName 
+	end	
+	ghost.PlayerNameWithRealm = ghost.CurrentRealm.." - "..ghost.PlayerName	
 	ghost.PlayerClass = UnitClass("player");
 	ghost.PlayerFaction = UnitFactionGroup("player");
 	ghost.PlayerLevel = UnitLevel("player");
@@ -59,11 +62,11 @@ function ghost:PrimeItemCache()
 
 	-- Get each chapter
 	for index, chapter in pairs(ghost.MainQuest.Chapters) do			
-		GetItemInfo(chapter.ItemID)	
+		ghost:GetItemInfo(chapter.ItemID)	
 
 		-- Get pages for each chapter
 		for index, itemID in pairs(chapter.Pages) do	
-			GetItemInfo(itemID)		
+			ghost:GetItemInfo(itemID)		
 		end	
 	end	
 end

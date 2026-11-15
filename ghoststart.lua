@@ -18,6 +18,7 @@ function ghost:OnEvent(self, event, ...)
 		ghostFrame:UnregisterEvent("ADDON_LOADED");
 	elseif event == "PLAYER_LOGIN" then
 		ghostFrame:UnregisterEvent("PLAYER_LOGIN");
+		ghost:LoadGameVersionData();
 		ghost:LoadQuestData();
 		ghost:LoadPlayerData();
 		ghost:LoadAccountData();
@@ -29,16 +30,22 @@ function ghost:OnEvent(self, event, ...)
 	end
 end
 
+function ghost:LoadGameVersionData()
+
+	ghost.IsForever = WOW_PROJECT_ID == WOW_PROJECT_CAMELOT
+	ghost.IsClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+end
+
 function ghost:LoadPlayerData()
 
 	ghost.CurrentRealm = GetRealmName();
 	ghost.PlayerName, ghost.PlayerLastName = UnitName("player");
 	ghost.HideRealmName = false
-	if(ghost.PlayerLastName ~= nil) then -- Accounting for Forever's dual names and "realmlessness"
+	if(ghost.IsForever) then -- Accounting for Forever's dual names and "realmlessness"
 		ghost.HideRealmName = true
 		ghost.PlayerName = ghost.PlayerName..' '..ghost.PlayerLastName 
 	end	
-	ghost.PlayerNameWithRealm = ghost.CurrentRealm.." - "..ghost.PlayerName	
+	ghost.PlayerNameWithRealm = ghost.CurrentRealm.." - "..ghost.PlayerName
 	ghost.PlayerClass = UnitClass("player");
 	ghost.PlayerFaction = UnitFactionGroup("player");
 	ghost.PlayerLevel = UnitLevel("player");

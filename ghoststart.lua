@@ -22,7 +22,9 @@ function ghost:OnEvent(self, event, ...)
 		ghost:LoadQuestData();
 		ghost:LoadPlayerData();
 		ghost:LoadAccountData();
-		ghost:CleanUpEmptyKeyData();
+		if(ghost.IsForever) then
+			ghost:CleanUpRealmDataAfterAPIChange();
+		end
 		ghost:PrimeItemCache();
 		ghost:UpdatePlayerProgress();
 		ghost:Announce();
@@ -66,7 +68,7 @@ function ghost:LoadAccountData()
 
 end
 
-function ghost:CleanUpEmptyKeyData()
+function ghost:CleanUpRealmDataAfterAPIChange()
 
 	-- API Change with 1.60.1 Forever patch changed GetRealmName() to return empty string
 	-- causing the addon to store character data in a different, empty key instead of by realm name

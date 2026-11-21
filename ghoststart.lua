@@ -22,6 +22,7 @@ function ghost:OnEvent(self, event, ...)
 		ghost:LoadQuestData();
 		ghost:LoadPlayerData();
 		ghost:LoadAccountData();
+		ghost:CleanUpEmptyKeyData();
 		ghost:PrimeItemCache();
 		ghost:UpdatePlayerProgress();
 		ghost:Announce();
@@ -44,6 +45,7 @@ function ghost:LoadPlayerData()
 	if(ghost.IsForever) then -- Accounting for Forever's dual names and "realmlessness"
 		ghost.HideRealmName = true
 		ghost.PlayerName = ghost.PlayerName..' '..ghost.PlayerLastName 
+		ghost.CurrentRealm = 'Forever' -- API changes no longer return realm name on Forever, and names are unique across regions anyway
 	end	
 	ghost.PlayerNameWithRealm = ghost.CurrentRealm.." - "..ghost.PlayerName
 	ghost.PlayerClass = UnitClass("player");
@@ -60,6 +62,31 @@ function ghost:LoadAccountData()
 	
 	if(GhostCharacterProgress[ghost.CurrentRealm] == nil) then
 		GhostCharacterProgress[ghost.CurrentRealm] = {}
+	end
+
+end
+
+function ghost:CleanUpEmptyKeyData()
+
+	-- API Change with 1.60.1 Forever patch changed GetRealmName() to return empty string
+	-- causing the addon to store character data in a different, empty key instead of by realm name
+	-- The addon is now fixed to store character data for Forever in key "Forever", but we need to
+	-- clean up the old data that was stored in "CAMWOW..." realm keys and then in the empty realm key
+
+	-- Import then delete any data stored in that interim empty key first, as that's more recent then "CAMWOW" realm data
+	if(GhostCharacterProgress[""] ~= nil) then
+		GhostCharacterProgress[ghost.CurrentRealm] = GhostCharacterProgress[""]
+		GhostCharacterProgress[""] = nil
+	end
+
+	-- Then import "CAMWOW" data if needed and delete "CAMWOW" data
+	for realm, data in pairs(GhostCharacterProgress) do
+		if(string.find(realm,"CAMWOW",1, true) and realm ~= nil) then
+			if(GhostCharacterProgress[ghost.CurrentRealm] == nil) then
+				GhostCharacterProgress[ghost.CurrentRealm] = GhostCharacterProgress[realm]
+			end
+			GhostCharacterProgress[realm] = nil
+		end
 	end
 
 end
